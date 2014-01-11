@@ -1,0 +1,6 @@
+#!/usr/bin/env ruby
+
+require 'zit'
+
+zit_zap = Zit::Zap.new
+zit_zap.init
