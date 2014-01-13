@@ -1,6 +1,24 @@
 #!/usr/bin/env ruby
 
 require 'zit'
+require 'optparse'
+
+options = {}
+
+OptionParser.new do |opts|
+  opts.banner = "Usage: zit ticket_id [options]"
+  options = false
+  opts.on("-r", "--ready", "Check PR readiness") do
+    options = true
+  end
+end.parse!
 
 zit_zap = Zit::Zap.new
-zit_zap.init
+
+case options
+when false
+  tid = ARGV.pop
+  zit_zap.init tid
+when true
+  zit_zap.ready
+end
