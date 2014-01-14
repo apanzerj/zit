@@ -34,9 +34,14 @@ module Zit
     end
   end
 
+  class JiraIssue
+    def initialize
+    end
+  end
+
   class Zap
     
-    def init(ticket_id)
+    def init(ticket_id, connector)
       Zit::Error.new("Not a git repository") unless File.directory?(".git")
       puts "Found .git"
       @g = Git.open(Dir.pwd)
@@ -47,6 +52,8 @@ module Zit
         puts "Git name not set! Using dooby..."
         name = "dooby"
       end
+      new_branch = branch_name(name, ticket_id)
+
       new_branch = "#{name}/zd#{ticket_id}"
       @g.branch(new_branch).checkout
       zt = Zit::ZendeskTicket.new

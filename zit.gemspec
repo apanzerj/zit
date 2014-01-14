@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.email         = ["apanzerj@gmail.com"]
   spec.description   = %q{A tool to unify zendesk and git}
   spec.summary       = %q{Unify zendesk and git}
-  spec.homepage      = ""
+  spec.homepage      = "https://github.com/apanzerj/zit"
   spec.license       = "MIT"
 
   spec.files         = `git ls-files`.split($/)
@@ -21,5 +21,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "bundler", "~> 1.3"
   spec.add_development_dependency "rake"
   spec.add_development_dependency "git"
-  spec.add_development_dependency "jira"
+  spec.add_development_dependency "jira-ruby"
 end

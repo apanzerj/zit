@@ -5,20 +5,46 @@ require 'optparse'
 
 options = {}
 
-OptionParser.new do |opts|
+optparse = OptionParser.new do |opts|
   opts.banner = "Usage: zit ticket_id [options]"
-  options = false
+  
+  options[:ready] = false
   opts.on("-r", "--ready", "Check PR readiness") do
-    options = true
+    options[:ready] = true
   end
-end.parse!
+  
+  opts.on('-c', '--connector NAME', [:jira, :zendesk], "Connect to Zendesk or Jira.") do |connector|
+    options[:connector] = connector
+  end
+
+  opts.on('-h', '--help', 'Help dialog') do
+    puts opts
+    exit
+  end
+end
+
+begin
+  optparse.parse!
+  puts options
+  if (options[:connector].nil? || (options[:connector] != :jira && options[:connector] != :zendesk))
+    puts "No connector, or incorrect connector specified."
+    puts "#{options.inspect}, |#{options[:connector]}|"
+    exit
+  end
+  tissue = ARGV.pop
+rescue OptionParser::InvalidOption, OptionParser::MissingArgument, OptionParser::InvalidArgument
+  puts $!.to_s
+  puts optparse
+  exit
+end
 
 zit_zap = Zit::Zap.new
 
-case options
+case options[:ready]
 when false
+  connector = options[:connector]
   tid = ARGV.pop
-  zit_zap.init tid
+  zit_zap.init tid connector
 when true
   zit_zap.ready
 end
