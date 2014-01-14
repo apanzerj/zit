@@ -1,18 +1,8 @@
 # Zit
 
-Basically I got tired of constantly making a branch, naming it right, including relevant garbage in the PR. So I made this as a weekend project. VERY work in progress.
+Helps manage Pull Requests and branches in git while sending automated (private) updates to the Zendesk agent(s) who are working with the customer.
 
-## Installation
-
-Add this line to your application's Gemfile:
-
-    gem 'zit'
-
-And then execute:
-
-    $ bundle
-
-Or install it yourself as:
+# Install
 
     $ gem install zit
 
@@ -25,12 +15,3 @@ Use this to start your work. Put your ticketid where it says ticketid and it wil
 zit ready (finish your work)
 
 Use this when you are done and it will create a pull request (in a new browser window, that you can edit). The PR will have the replication steps from the comment in the ticket that a specific tag.
-
-
-## Contributing
-
-1. Fork it
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create new Pull Request
