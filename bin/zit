@@ -42,6 +42,7 @@ begin
     puts "#{options.inspect}, |#{options[:system]}|"
     exit
   end
+  puts options.inspect
 rescue OptionParser::InvalidOption, OptionParser::MissingArgument, OptionParser::InvalidArgument
   puts $!.to_s
   puts optparse
@@ -52,7 +53,7 @@ zit_zap = Zit::Zap.new
 
 case options[:ready]
 when false
-  zit_zap.init(options[:foreign_key], options[:system])
+  zit_zap.init(options[:foreign_key], options[:system], options[:project])
 when true
   zit_zap.ready
 end

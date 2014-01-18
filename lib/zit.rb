@@ -2,11 +2,16 @@ require "zit/version"
 require "git"
 require "zendesk_api"
 require "CGI"
+require "httparty"
 
 module Zit
   BASE_REPO = "https://github.com/apanzerj/test_repo"
+  
   TOKEN = ENV['zendesk_token']
   USER = ENV['zendesk_user']
+  
+  JIRA_USER = ENV['jira_user']
+  JIRA_PASS = ENV['jira_pass']
 
   class Error
     def initialize(msg)
@@ -14,6 +19,32 @@ module Zit
       exit
     end
   end
+
+  class JiraClient
+    include HTTParty
+    JIRA_URI = "https://zendesk.atlassian.net/rest/api/latest"
+
+    def initialize
+      response = self.class.get("#{JIRA_URI}/dashboard", :basic_auth => self.auth )
+      puts response.code
+      self
+    end
+
+    def auth
+      return { :username => JIRA_USER, :password => JIRA_PASS }
+    end
+
+    def get_issue(issue)
+      self.class.get("#{JIRA_URI}/issue/#{issue}", :basic_auth => self.auth)
+    end
+
+    def add_comment_to_issue(message, issue)
+#      post_options = {:body => {:body => message },}
+      response = self.class.post("#{JIRA_URI}/issue/#{issue}/comment", :body=>{:body => message.to_s}.to_json, :headers => {'content-type'=>'application/json'}, :basic_auth => self.auth)
+      puts response.code
+    end
+  end
+
   
   class Management
     def initialize(options = {})
@@ -44,26 +75,31 @@ module Zit
         @options[:client] = @client
         true
       when :jira
-        return "not yet"
-        false
+        @options[:client] = JiraClient.new()
+        true
       end
     end
 
     def options_validation(options)
-      Zit::Error.new("Invalid system...") if options[:system] != :zendesk && options[:system] != :jira
-      case options[:system]
-      when :zendesk
-        Zit::Error.new("No ticket number provided!") if options[:foreign_key].size == 0
-      when :jira
-        Zit::Error.new("No jira project!") if options[:project].size == 0
-        Zit::Error.new("No issue id!") if options[:foreign_key].size == 0
+      puts options.inspect
+      begin
+        Zit::Error.new("Invalid system...") if options[:system] != :zendesk && options[:system] != :jira
+        case options[:system]
+        when :zendesk
+          Zit::Error.new("No ticket number provided!") if options[:foreign_key].nil?
+        when :jira
+          Zit::Error.new("No jira project!") if options[:project].nil?
+          Zit::Error.new("No issue id!") if options[:foreign_key].nil?
+        end
+        true
+      rescue NoMethodError
+        Zit::Error.new("Nil Erorr")
       end
-      true
     end
     
     def branch_name(username)
       @options[:branch_name] ||= "#{username}/zd#{@options[:foreign_key]}" if @options[:system] == :zendesk
-      @options[:branch_name] ||= "#{options[:project]}_#{options[:foreign_key]}" if @options[:system] == :jira
+      @options[:branch_name] ||= "#{@options[:project]}_#{@options[:foreign_key]}" if @options[:system] == :jira
       @options[:branch_name]
     end
 
@@ -81,6 +117,11 @@ module Zit
       ticket.comment.public = false
       puts "Creating ticket comment"
       ticket.save
+    end
+
+    def jira_pingback
+      issue = "#{@options[:project]}-#{@options[:foreign_key]}"
+      @options[:client].add_comment_to_issue("A branch for this issue has been created. It should be named #{@options[:branch_name]}.", issue)
     end
   end
 
