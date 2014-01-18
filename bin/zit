@@ -42,7 +42,6 @@ begin
     puts "#{options.inspect}, |#{options[:system]}|"
     exit
   end
-  puts options.inspect
 rescue OptionParser::InvalidOption, OptionParser::MissingArgument, OptionParser::InvalidArgument
   puts $!.to_s
   puts optparse
