@@ -8,7 +8,7 @@ Helps manage Pull Requests and branches in git while sending automated (private)
 
 ## Usage
 
-zit init ticketid
+zit init -c zendesk -t [ticketid]
 
 Use this to start your work. Put your ticketid where it says ticketid and it will create a new branch. It will also find the ticket in Zendesk and add the following comment: "A new branch has been created for this ticket. It should be named [new\_branch\_name]."
 
