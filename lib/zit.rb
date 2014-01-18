@@ -15,17 +15,59 @@ module Zit
     end
   end
   
-  class ZendeskTicket    
-    def initialize
-      env_set = (TOKEN.is_a?(String) && TOKEN.size > 0) && (USER.is_a?(String) && USER.size > 0)
-      Zit::Error.new("Unable to locate the zendesk_token and zendesk_user environment variables. Please set them and try again.") unless env_set
-      puts "Connecting to Zendesk..."
-      @client = ZendeskAPI::Client.new do |config|
-        config.url = "https://example.zendesk.com/api/v2"
-        config.username = USER
-        config.token = TOKEN
+  class Management
+    def initialize(options = {})
+      @options = options
+      # Options = { 
+      #   :system => [jira|zendesk]
+      #   :project => 
+      #   :foreign_key =>
+      #   }
+      
+      #Validate ENV and Options
+      valid = options_validation(options)
+      Zit::Error.new("There was an error configuring the client.") unless set_client
+    end
+
+    def set_client
+      case @options[:system]
+      when :zendesk
+        env_set = (TOKEN.is_a?(String) && TOKEN.size > 0) && (USER.is_a?(String) && USER.size > 0)
+        Zit::Error.new("Unable to locate the zendesk_token and zendesk_user environment variables. Please set them and try again.") unless env_set
+        puts "Connecting to Zendesk..."
+        @client = ZendeskAPI::Client.new do |config|
+          config.url = "https://example.zendesk.com/api/v2"
+          config.username = USER
+          config.token = TOKEN
+        end
+        puts "Connected as #{@client.current_user[:name]}"
+        @options[:client] = @client
+        true
+      when :jira
+        return "not yet"
+        false
       end
-      puts "Connected as #{@client.current_user[:name]}"
+    end
+
+    def options_validation(options)
+      Zit::Error.new("Invalid system...") if options[:system] != :zendesk && options[:system] != :jira
+      case options[:system]
+      when :zendesk
+        Zit::Error.new("No ticket number provided!") if options[:foreign_key].size == 0
+      when :jira
+        Zit::Error.new("No jira project!") if options[:project].size == 0
+        Zit::Error.new("No issue id!") if options[:foreign_key].size == 0
+      end
+      true
+    end
+    
+    def branch_name(username)
+      return "#{username}/zd#{@options[:foreign_key]}" if @options[:system] == :zendesk
+      return "#{options[:project]}_#{options[:foreign_key]}" if @options[:system] == :jira
+    end
+
+    def system_name
+      @options[:system].to_s
     end
 
     def get_ticket(ticket_id = 'nil')
@@ -34,14 +76,12 @@ module Zit
     end
   end
 
-  class JiraIssue
-    def initialize
-    end
-  end
-
   class Zap
-    
-    def init(ticket_id, connector)
+    def init(fk, connector, project=nil)
+      #initialize issue/ticket system
+      system = Zit::Management.new({:system => connector, :foreign_key => fk, :project=>project})
+      
+      #gather git data
       Zit::Error.new("Not a git repository") unless File.directory?(".git")
       puts "Found .git"
       @g = Git.open(Dir.pwd)
@@ -52,16 +92,18 @@ module Zit
         puts "Git name not set! Using dooby..."
         name = "dooby"
       end
-      new_branch = branch_name(name, ticket_id)
+      
+      #name the new branch
+      new_branch = system.branch_name(name)
+      puts new_branch
 
-      new_branch = "#{name}/zd#{ticket_id}"
       @g.branch(new_branch).checkout
-      zt = Zit::ZendeskTicket.new
-      ticket = zt.get_ticket(ticket_id)
-      ticket.comment = {:body => "A new branch has been created for this ticket. It should be named #{new_branch}."}
-      ticket.comment.public = false
-      puts "Creating ticket comment"
-      ticket.save
+      #zt = Zit::ZendeskTicket.new
+      #ticket = zt.get_ticket(ticket_id)
+      #ticket.comment = {:body => "A new branch has been created for this ticket. It should be named #{new_branch}."}
+      #ticket.comment.public = false
+      #puts "Creating ticket comment"
+      #ticket.save
     end
     
     

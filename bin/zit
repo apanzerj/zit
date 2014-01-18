@@ -14,7 +14,19 @@ optparse = OptionParser.new do |opts|
   end
   
   opts.on('-c', '--connector NAME', [:jira, :zendesk], "Connect to Zendesk or Jira.") do |connector|
-    options[:connector] = connector
+    options[:system] = connector
+    if options[:system] == :jira
+      opts.on("-p", "--project PROJECT", "The Jira project code.") do |project|
+        options[:project] = project
+      end
+      opts.on("-i", "--issue ISSUE", "The jira issue number.") do |issue|
+        options[:foreign_key] = issue
+      end
+    elsif options[:system] == :zendesk
+      opts.on("-t", "--ticket TICKETID", "The ticket id of the Zendesk ticket.") do |tid|
+        options[:foreign_key] = tid
+      end
+    end
   end
 
   opts.on('-h', '--help', 'Help dialog') do
@@ -25,13 +37,11 @@ end
 
 begin
   optparse.parse!
-  puts options
-  if (options[:connector].nil? || (options[:connector] != :jira && options[:connector] != :zendesk))
+  if (options[:system].nil? || (options[:system] != :jira && options[:system] != :zendesk))
     puts "No connector, or incorrect connector specified."
-    puts "#{options.inspect}, |#{options[:connector]}|"
+    puts "#{options.inspect}, |#{options[:system]}|"
     exit
   end
-  tissue = ARGV.pop
 rescue OptionParser::InvalidOption, OptionParser::MissingArgument, OptionParser::InvalidArgument
   puts $!.to_s
   puts optparse
@@ -42,9 +52,7 @@ zit_zap = Zit::Zap.new
 
 case options[:ready]
 when false
-  connector = options[:connector]
-  tid = ARGV.pop
-  zit_zap.init tid connector
+  zit_zap.init(options[:foreign_key], options[:system])
 when true
   zit_zap.ready
 end
