@@ -62,17 +62,25 @@ module Zit
     end
     
     def branch_name(username)
-      return "#{username}/zd#{@options[:foreign_key]}" if @options[:system] == :zendesk
-      return "#{options[:project]}_#{options[:foreign_key]}" if @options[:system] == :jira
+      @options[:branch_name] ||= "#{username}/zd#{@options[:foreign_key]}" if @options[:system] == :zendesk
+      @options[:branch_name] ||= "#{options[:project]}_#{options[:foreign_key]}" if @options[:system] == :jira
+      @options[:branch_name]
     end
 
     def system_name
       @options[:system].to_s
     end
 
-    def get_ticket(ticket_id = 'nil')
-      return unless ticket_id
-      @client.tickets.find(:id => ticket_id)
+    def ping_back
+      @options[:system] == :zendesk ? zendesk_pingback : jira_pingback
+    end
+
+    def zendesk_pingback
+      ticket = @options[:client].tickets.find(:id => @options[:foreign_key].to_i)
+      ticket.comment = {:body => "A new branch has been created for this ticket. It should be named #{@options[:branch_name]}."}
+      ticket.comment.public = false
+      puts "Creating ticket comment"
+      ticket.save
     end
   end
 
@@ -95,15 +103,8 @@ module Zit
       
       #name the new branch
       new_branch = system.branch_name(name)
-      puts new_branch
-
       @g.branch(new_branch).checkout
-      #zt = Zit::ZendeskTicket.new
-      #ticket = zt.get_ticket(ticket_id)
-      #ticket.comment = {:body => "A new branch has been created for this ticket. It should be named #{new_branch}."}
-      #ticket.comment.public = false
-      #puts "Creating ticket comment"
-      #ticket.save
+      system.ping_back
     end
     
     
