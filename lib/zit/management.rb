@@ -56,26 +56,72 @@ module Zit
       @options[:branch_name]
     end
 
-    def system_name
-      @options[:system].to_s
-    end
-
     def ping_back
       @options[:system] == :zendesk ? zendesk_pingback : jira_pingback
     end
 
-    def zendesk_pingback
+    def ready
+      @g = Git.open(Dir.pwd)
+      @options[:current_branch] = @g.current_branch.to_s
+      msg = "A pull request is being made for this branch."
+      
+      @options[:current_branch].match(/.*?\/zd(\d{1,8})/).size == 2 ? zendesk_ready : jira_ready
+      if @options[:system] == :zendesk
+        ticket = @options[:client].tickets.find(:id => @options[:foreign_key])
+        rep_steps = get_repsteps(ticket)
+      else
+        rep_steps = "Place a brief description here."
+      end
+      link = "#{pr_link}#{@options[:current_branch]}"
+      `open #{link}?pull_request[title]=ZD#{ticket_id}&pull_request[body]=#{CGI.escape(rep_steps)}`
+    end
+
+    def pr_link
+      link = "#{BASE_REPO}/compare/master..."
+    end
+
+    # Zendesk methods
+
+    def zendesk_pingback(msg)
       ticket = @options[:client].tickets.find(:id => @options[:foreign_key].to_i)
-      ticket.comment = {:body => "A new branch has been created for this ticket. It should be named #{@options[:branch_name]}."}
+      ticket.comment = {:body => msg}
       ticket.comment.public = false
       puts "Creating ticket comment"
       ticket.save
     end
 
-    def jira_pingback
+    def zendesk_ready
+      @options[:connector] = :zendesk
+      @options[:foreign_key] = @options[:current_branch].match(/.*?\/zd(\d{1,8})/)[1]
+      zendesk_pingback("A pull request for your branch is being created")
+    end
+
+    def get_repsteps(ticket)
+      audits = ticket.audits.fetch
+      aud = audits.detect do |audit|
+        next unless audit.events.map(&:type).include?("Change")
+        next unless audit.events.map(&:field_name).include?("tags")
+        next unless audit.events.map(&:value).join(" ").include?("macro_1234")
+        audit
+      end
+      return aud.events.detect{|c| c.type == "Comment"}.body if aud.present?
+      return "No replication steps found\n"
+    end
+
+    # Jira methods
+
+    def jira_pingback(msg)
       issue = "#{@options[:project]}-#{@options[:foreign_key]}"
-      response = @options[:client].add_comment_to_issue("A branch for this issue has been created. It should be named #{@options[:branch_name]}.", issue)
+      response = @options[:client].add_comment_to_issue(msg, issue)
       puts "Jira issue updated!" if response == 201
+    end
+
+    def jira_ready
+      @options[:connector]    = :jira
+      mchdata = @options[:current_branch].match(/([A-Za-z].*?)_(\d.*?)/)
+      @options[:project]      = mchdata[1]
+      @options[:foreign_key]  = mchdata[2]
+      jira_pingback("A pull request for your branch is being created")
     end
   end
 end
