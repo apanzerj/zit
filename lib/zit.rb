@@ -42,8 +42,19 @@ module Zit
       #name the new branch
       new_branch = system.branch_name(name)
       @g.branch(new_branch).checkout
-      msg = "A branch for this #{connector == :jira ? "issue" : "ticket" } has been created. It should be named #{@options[:branch_name]}."
+      msg = "A branch for this #{connector == :jira ? "issue" : "ticket" } has been created. It should be named #{new_branch}."
       system.ping_back(msg)
+    end
+
+    def ready
+      @g = Git.open(Dir.pwd)
+      @options = {}
+      @options[:current_branch] = @g.current_branch.to_s
+      msg = "A pull request is being made for this branch."
+      @options[:current_branch].match(/.*?\/zd(\d{1,8})/).nil? ? jira_ready : zendesk_ready
+      system = Zit::Management.new(@options)
+      #system.ping_back("A pull request for your branch is being created")
+      system.ready
     end
     
         
@@ -55,6 +66,17 @@ module Zit
       Zit::Error.new("Couldn't find branch master! #{master.inspect}") unless master
       master.checkout
     end
-
+    
+    def jira_ready
+      @options[:system]       = :jira
+      mchdata = @options[:current_branch].match(/.*?\/([A-Za-z].*?)_(\d.*)/)
+      @options[:project]      = mchdata[1]
+      @options[:foreign_key]  = mchdata[2]
+    end
+    
+    def zendesk_ready
+      @options[:system] = :zendesk
+      @options[:foreign_key] = @options[:current_branch].match(/.*?\/zd(\d{1,8})/)[1]
+    end
   end
 end
