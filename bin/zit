@@ -9,8 +9,13 @@ optparse = OptionParser.new do |opts|
   opts.banner = "Usage: zit ticket_id [options]"
   
   options[:ready] = false
-  opts.on("-r", "--ready", "Check PR readiness") do
+  opts.on("r", "ready", "Create pull request.") do
     options[:ready] = true
+  end
+  
+  options[:init] = false
+  opts.on("i", "init", "Begin workflow. Create a branch.") do
+    options[:init] = true
   end
   
   opts.on('-c', '--connector NAME', [:jira, :zendesk], "Connect to Zendesk or Jira.") do |connector|
@@ -49,10 +54,5 @@ rescue OptionParser::InvalidOption, OptionParser::MissingArgument, OptionParser:
 end
 
 zit_zap = Zit::Zap.new
-
-case options[:ready]
-when false
-  zit_zap.init(options[:foreign_key], options[:system], options[:project])
-when true
-  zit_zap.ready
-end
+zit_zap.init(options[:foreign_key], options[:system], options[:project]) if options[:init]
+zit_zap.ready if options[:ready]
