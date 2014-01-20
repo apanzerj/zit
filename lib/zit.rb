@@ -53,7 +53,7 @@ module Zit
       msg = "A pull request is being made for this branch."
       @options[:current_branch].match(/.*?\/zd(\d{1,8})/).nil? ? jira_ready : zendesk_ready
       system = Zit::Management.new(@options)
-      #system.ping_back("A pull request for your branch is being created")
+      system.ping_back("A pull request for your branch is being created")
       system.ready
     end
     
