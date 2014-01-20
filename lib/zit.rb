@@ -42,17 +42,29 @@ module Zit
       #name the new branch
       new_branch = system.branch_name(name)
       @g.branch(new_branch).checkout
+
+      # Provide a ping_back message
       msg = "A branch for this #{connector == :jira ? "issue" : "ticket" } has been created. It should be named #{new_branch}."
       system.ping_back(msg)
     end
 
     def ready
+      # Description: Finish workflow by calling ready. This method is the start of the "closing up" workflow.
+
       @g = Git.open(Dir.pwd)
       @options = {}
       @options[:current_branch] = @g.current_branch.to_s
+
+      # Create message for ping_back
       msg = "A pull request is being made for this branch."
+
+      # Create the needed options hash
       @options[:current_branch].match(/.*?\/zd(\d{1,8})/).nil? ? jira_ready : zendesk_ready
+      
+      # Initialize system object
       system = Zit::Management.new(@options)
+
+      # Ping_back and pick comment.
       system.ping_back("A pull request for your branch is being created")
       system.ready
     end
@@ -67,6 +79,10 @@ module Zit
       master.checkout
     end
     
+
+    # The following methods are for creating the options hash. If you want to change how your branches are named
+    # then these methods need to be updated. 
+
     def jira_ready
       @options[:system]       = :jira
       mchdata = @options[:current_branch].match(/.*?\/([A-Za-z].*?)_(\d.*)/)

@@ -6,7 +6,7 @@ require 'optparse'
 options = {}
 
 optparse = OptionParser.new do |opts|
-  opts.banner = "Usage: zit ticket_id [options]"
+  opts.banner = "Usage (Starting Workflow): zit init\nUsage (Finishing Workflow): zit ready -c CONNECTOR"
   
   options[:ready] = false
   opts.on("r", "ready", "Create pull request.") do
@@ -18,7 +18,7 @@ optparse = OptionParser.new do |opts|
     options[:init] = true
   end
   
-  opts.on('-c', '--connector NAME', [:jira, :zendesk], "Connect to Zendesk or Jira.") do |connector|
+  opts.on('-c', '--connector NAME', [:jira, :zendesk], "Connector is either zendesk or jira.") do |connector|
     options[:system] = connector
     if options[:system] == :jira
       opts.on("-p", "--project PROJECT", "The Jira project code.") do |project|
