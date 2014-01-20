@@ -52,29 +52,73 @@ module Zit
     
     def branch_name(username)
       @options[:branch_name] ||= "#{username}/zd#{@options[:foreign_key]}" if @options[:system] == :zendesk
-      @options[:branch_name] ||= "#{@options[:project]}_#{@options[:foreign_key]}" if @options[:system] == :jira
+      @options[:branch_name] ||= "#{username}/#{@options[:project]}_#{@options[:foreign_key]}" if @options[:system] == :jira
       @options[:branch_name]
     end
 
-    def system_name
-      @options[:system].to_s
+    def ping_back(msg)
+      @options[:system] == :zendesk ? zendesk_pingback(msg) : jira_pingback(msg)
     end
 
-    def ping_back
-      @options[:system] == :zendesk ? zendesk_pingback : jira_pingback
+    def ready
+      if @options[:system] == :zendesk
+        ticket = @options[:client].tickets.find(:id => @options[:foreign_key])
+        rep_steps = get_repsteps(ticket)
+      elsif @options[:system] == :jira
+        issue = @options[:client].get_issue("#{@options[:project]}-#{@options[:foreign_key]}")
+        comments = issue["fields"]["comment"]["comments"]
+        rep_steps = (pick_comment(comments) || "Place a brief description here.")
+      end
+      link = "#{pr_link}#{@options[:current_branch]}"
+      puts "open #{link}?pull_request[title]=#{@options[:system] == :zendesk ? "ZD" : "#{@options[:project]}-"}#{@options[:foreign_key]}&pull_request[body]=#{CGI.escape(rep_steps)}"
     end
 
-    def zendesk_pingback
+    def pick_comment(comments)
+      step = -1
+      until (0..comments.size-1).include?(step)
+        puts "Would you like to choose a comment from the issue as a description for your PR?"
+        comments.each_index do |n|
+          puts "#{n}. #{comments[n]["body"].inspect}"
+        end
+        print "(N)o, #:"
+        step = gets.chomp
+        step = Integer(step) unless step.to_s.downcase == "no"
+        return nil if step.to_s.downcase == "no"
+      end
+      comments[step]["body"]
+    end
+
+    def pr_link
+      link = "#{BASE_REPO}/compare/master..."
+    end
+
+    # Zendesk methods
+
+    def zendesk_pingback(msg)
       ticket = @options[:client].tickets.find(:id => @options[:foreign_key].to_i)
-      ticket.comment = {:body => "A new branch has been created for this ticket. It should be named #{@options[:branch_name]}."}
+      ticket.comment = {:body => msg}
       ticket.comment.public = false
       puts "Creating ticket comment"
       ticket.save
     end
 
-    def jira_pingback
+    def get_repsteps(ticket)
+      audits = ticket.audits.fetch
+      aud = audits.detect do |audit|
+        next unless audit.events.map(&:type).include?("Change")
+        next unless audit.events.map(&:field_name).include?("tags")
+        next unless audit.events.map(&:value).join(" ").include?("macro_1234")
+        audit
+      end
+      return aud.events.detect{|c| c.type == "Comment"}.body if aud.present?
+      return "No replication steps found\n"
+    end
+
+    # Jira methods
+
+    def jira_pingback(msg)
       issue = "#{@options[:project]}-#{@options[:foreign_key]}"
-      response = @options[:client].add_comment_to_issue("A branch for this issue has been created. It should be named #{@options[:branch_name]}.", issue)
+      response = @options[:client].add_comment_to_issue(msg, issue)
       puts "Jira issue updated!" if response == 201
     end
   end

@@ -42,22 +42,22 @@ module Zit
       #name the new branch
       new_branch = system.branch_name(name)
       @g.branch(new_branch).checkout
-      system.ping_back
+      msg = "A branch for this #{connector == :jira ? "issue" : "ticket" } has been created. It should be named #{new_branch}."
+      system.ping_back(msg)
     end
-    
-    
+
     def ready
       @g = Git.open(Dir.pwd)
-      current_branch = @g.current_branch.to_s
-      zt = Zit::ZendeskTicket.new
-      ticket_id = current_branch.match(/.*?\/zd(\d{1,8})/)[1]
-      puts "Ticket ID detected as #{ticket_id}"
-      ticket = zt.get_ticket(ticket_id)
-      rep_steps = get_repsteps(ticket)
-      link = "#{pr_link}#{current_branch}"
-      `open #{link}?pull_request[title]=ZD#{ticket_id}&pull_request[body]=#{CGI.escape(rep_steps)}`
+      @options = {}
+      @options[:current_branch] = @g.current_branch.to_s
+      msg = "A pull request is being made for this branch."
+      @options[:current_branch].match(/.*?\/zd(\d{1,8})/).nil? ? jira_ready : zendesk_ready
+      system = Zit::Management.new(@options)
+      #system.ping_back("A pull request for your branch is being created")
+      system.ready
     end
     
+        
     private
     
     def checkout_master
@@ -66,21 +66,17 @@ module Zit
       Zit::Error.new("Couldn't find branch master! #{master.inspect}") unless master
       master.checkout
     end
-
-    def pr_link
-      link = "#{BASE_REPO}/compare/master..."
+    
+    def jira_ready
+      @options[:system]       = :jira
+      mchdata = @options[:current_branch].match(/.*?\/([A-Za-z].*?)_(\d.*)/)
+      @options[:project]      = mchdata[1]
+      @options[:foreign_key]  = mchdata[2]
     end
-
-    def get_repsteps(ticket)
-      audits = ticket.audits.fetch
-      aud = audits.detect do |audit|
-        next unless audit.events.map(&:type).include?("Change")
-        next unless audit.events.map(&:field_name).include?("tags")
-        next unless audit.events.map(&:value).join(" ").include?("macro_1234")
-        audit
-      end
-      return aud.events.detect{|c| c.type == "Comment"}.body if aud.present?
-      return "No replication steps found\n"
+    
+    def zendesk_ready
+      @options[:system] = :zendesk
+      @options[:foreign_key] = @options[:current_branch].match(/.*?\/zd(\d{1,8})/)[1]
     end
   end
 end
