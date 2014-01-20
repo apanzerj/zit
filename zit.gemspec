@@ -8,8 +8,8 @@ Gem::Specification.new do |spec|
   spec.version       = Zit::VERSION
   spec.authors       = ["Adam Panzer"]
   spec.email         = ["apanzerj@gmail.com"]
-  spec.description   = %q{A tool to unify zendesk and git}
-  spec.summary       = %q{Unify zendesk and git}
+  spec.description   = %q{A tool to unify zendesk and git as well as jira and git.}
+  spec.summary       = %q{Unify zendesk and git, jira and git.}
   spec.homepage      = "https://github.com/apanzerj/zit"
   spec.license       = "MIT"
 
@@ -20,6 +20,7 @@ Gem::Specification.new do |spec|
 
   spec.add_development_dependency "bundler", "~> 1.3"
   spec.add_development_dependency "rake"
-  spec.add_development_dependency "git"
-  spec.add_development_dependency "jira-ruby"
+  spec.add_runtime_dependency "git"
+  spec.add_runtime_dependency "HTTParty"
+  spec.post_install_message = "Remember to set ENV variables: jira_user, jira_pass, zendesk_user, zendesk_token."
 end
