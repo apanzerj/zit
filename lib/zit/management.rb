@@ -1,7 +1,8 @@
 module Zit
   class Management
-    def initialize(options = {})
+    def initialize(options = {}, settings)
       @options = options
+      @settings = settings
       
       # Options = { 
       #   :system => [jira|zendesk]
@@ -10,7 +11,7 @@ module Zit
       #   }
       
       #Validate ENV and Options
-      valid = options_validation(options)
+      options_validation(options)
       Zit::Error.new("There was an error configuring the client.") unless set_client
     end
 
@@ -21,7 +22,7 @@ module Zit
         Zit::Error.new("Unable to locate the zendesk_token and zendesk_user environment variables. Please set them and try again.") unless env_set
         puts "Connecting to Zendesk..."
         @client = ZendeskAPI::Client.new do |config|
-          config.url = "https://example.zendesk.com/api/v2"
+          config.url = @settings.get("zendesk_url")
           config.username = USER
           config.token = TOKEN
         end
@@ -103,11 +104,12 @@ module Zit
     end
 
     def get_repsteps(ticket)
+      macro_tag = @settings.get("repsteps_tag")
       audits = ticket.audits.fetch
       aud = audits.detect do |audit|
         next unless audit.events.map(&:type).include?("Change")
         next unless audit.events.map(&:field_name).include?("tags")
-        next unless audit.events.map(&:value).join(" ").include?("macro_1234")
+        next unless audit.events.map(&:value).join(" ").include?(macro_tag)
         audit
       end
       return aud.events.detect{|c| c.type == "Comment"}.body if aud.present?

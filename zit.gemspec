@@ -23,5 +23,6 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency "git"
   spec.add_runtime_dependency "httparty"
   spec.add_runtime_dependency "zendesk_api"
+  spec.add_runtime_dependency "psych"
   spec.post_install_message = "Remember to set ENV variables: jira_user, jira_pass, zendesk_user, zendesk_token."
 end

@@ -25,14 +25,10 @@ EOS
   # optparse doesn't like subcommands. So neither of the following are output when you call help.
 
   options[:init] = false
-  opts.on("i", "init", "Begin workflow. Create a branch.") do
-    options[:init] = true if subcommand == "init"
-  end
+  options[:init] = true if subcommand == "init"
   
   options[:finish] = false
-  opts.on("f", "finish", "Create pull request.") do
-    options[:finish] = true if subcommand == "finish"
-  end
+  options[:finish] = true if subcommand == "finish"
 
   # These options are output.
 

@@ -1,6 +1,7 @@
 require "zit/version"
 require "zit/jira_client"
 require "zit/management"
+require "zit/settings"
 require "git"
 require "zendesk_api"
 require "CGI"
@@ -24,8 +25,11 @@ module Zit
 
   class Zap
     def init(fk, connector, project=nil)
+      # get settings from .zit
+      settings = Zit::Settings.new
+
       #initialize issue/ticket system
-      system = Zit::Management.new({:system => connector, :foreign_key => fk, :project=>project})
+      system = Zit::Management.new({:system => connector, :foreign_key => fk, :project=>project}, settings)
       
       #gather git data
       Zit::Error.new("Not a git repository") unless File.directory?(".git")
@@ -42,6 +46,9 @@ module Zit
       #name the new branch
       new_branch = system.branch_name(name)
       @g.branch(new_branch).checkout
+      
+      # set last system and last branch
+      settings.update_settings({:last_system => connector, :last_branch => new_branch})
 
       # Provide a ping_back message
       msg = "A branch for this #{connector == :jira ? "issue" : "ticket" } has been created. It should be named #{new_branch}."
@@ -50,11 +57,12 @@ module Zit
 
     def finish
       # Description: Finish workflow by calling ready. This method is the start of the "closing up" workflow.
+      settings = Zit::Settings.new
 
       @g = Git.open(Dir.pwd)
       @options = {}
       @options[:current_branch] = @g.current_branch.to_s
-
+      
       # Create message for ping_back
       msg = "A pull request is being made for this branch."
 
@@ -62,7 +70,7 @@ module Zit
       @options[:current_branch].match(/.*?\/zd(\d{1,8})/).nil? ? jira_ready : zendesk_ready
       
       # Initialize system object
-      system = Zit::Management.new(@options)
+      system = Zit::Management.new(@options, settings)
 
       # Ping_back and pick comment.
       system.ping_back("A pull request for your branch is being created")
