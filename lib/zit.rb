@@ -48,7 +48,7 @@ module Zit
       system.ping_back(msg)
     end
 
-    def ready
+    def finish
       # Description: Finish workflow by calling ready. This method is the start of the "closing up" workflow.
 
       @g = Git.open(Dir.pwd)

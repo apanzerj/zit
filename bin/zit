@@ -4,37 +4,64 @@ require 'zit'
 require 'optparse'
 
 options = {}
+subcommand = ARGV.shift unless ARGV[0] == "--help" || ARGV == "-h"# The subcommand is the first argument. 
 
 optparse = OptionParser.new do |opts|
-  opts.banner = "Usage (Starting Workflow): zit init\nUsage (Finishing Workflow): zit ready -c CONNECTOR"
-  
-  options[:ready] = false
-  opts.on("r", "ready", "Create pull request.") do
-    options[:ready] = true
-  end
-  
+  opts.banner = <<-EOS
+Usage: 
+
+The starting worflow is to begin your work. Use the subcommand "init" as in:
+
+zit init -c CONNECTOR [params]
+
+The finishing workflow, for when you are ready to create a pull request uses the "finish" subcommand, as in:
+
+zit finish -c CONNECTOR
+
+The params for init are as follows:
+
+EOS
+
+  # optparse doesn't like subcommands. So neither of the following are output when you call help.
+
   options[:init] = false
   opts.on("i", "init", "Begin workflow. Create a branch.") do
-    options[:init] = true
+    options[:init] = true if subcommand == "init"
   end
   
-  opts.on('-c', '--connector NAME', [:jira, :zendesk], "Connector is either zendesk or jira.") do |connector|
-    options[:system] = connector
-    if options[:system] == :jira
-      opts.on("-p", "--project PROJECT", "The Jira project code.") do |project|
-        options[:project] = project
-      end
-      opts.on("-i", "--issue ISSUE", "The jira issue number.") do |issue|
-        options[:foreign_key] = issue
-      end
-    elsif options[:system] == :zendesk
-      opts.on("-t", "--ticket TICKETID", "The ticket id of the Zendesk ticket.") do |tid|
-        options[:foreign_key] = tid
-      end
-    end
+  options[:finish] = false
+  opts.on("f", "finish", "Create pull request.") do
+    options[:finish] = true if subcommand == "finish"
   end
 
-  opts.on('-h', '--help', 'Help dialog') do
+  # These options are output.
+
+  opts.on('-c', '--connector NAME', [:jira, :zendesk], "The connector. Either \"zendesk\" or \"jira\".") do |connector|
+    options[:system] = connector
+  end
+  
+  opts.separator("") 
+  opts.separator("If working with Jira, the following are required params:")
+ 
+
+  opts.on("-p", "--project PROJECT", "The Jira project code.") do |project|
+    options[:project] = project
+  end
+
+  opts.on("-i", "--issue ISSUE", "The Jira issue number.") do |issue|
+    options[:foreign_key] = issue
+  end
+
+  opts.separator("")
+  opts.separator("If working with Zendesk, the following are required params:")
+
+  opts.on("-t", "--ticket TICKETID", "The ticket id of the Zendesk ticket.") do |tid|
+    options[:foreign_key] = tid
+  end
+
+  opts.separator("")
+
+  opts.on('-h', '--help', 'This help dialog') do
     puts opts
     exit
   end
@@ -55,4 +82,4 @@ end
 
 zit_zap = Zit::Zap.new
 zit_zap.init(options[:foreign_key], options[:system], options[:project]) if options[:init]
-zit_zap.ready if options[:ready]
+zit_zap.finish if options[:finish]
