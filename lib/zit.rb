@@ -35,7 +35,7 @@ module Zit
       Zit::Error.new("Not a git repository") unless File.directory?(".git")
       puts "Found .git"
       @g = Git.open(Dir.pwd)
-      checkout_master
+      checkout_master unless @g.current_branch.to_s == "master"
       begin
         name = @g.config('github.user')
       rescue Git::GitExecuteError
