@@ -8,7 +8,7 @@ require "CGI"
 require "httparty"
 
 module Zit
-  BASE_REPO = "https://github.com/apanzerj/test_repo"
+  BASE_REPO = "https://github.com/zendesk/zendesk"
   
   TOKEN = ENV['zendesk_token']
   USER = ENV['zendesk_user']
@@ -24,7 +24,7 @@ module Zit
   end
 
   class Zap
-    def init(fk, connector, project=nil)
+    def init(fk, connector, project=nil, quiet)
       # get settings from .zit
       settings = Zit::Settings.new
 
@@ -52,7 +52,7 @@ module Zit
 
       # Provide a ping_back message
       msg = "A branch for this #{connector == :jira ? "issue" : "ticket" } has been created. It should be named #{new_branch}."
-      system.ping_back(msg)
+      system.ping_back(msg) unless quiet
     end
 
     def finish
@@ -73,7 +73,7 @@ module Zit
       system = Zit::Management.new(@options, settings)
 
       # Ping_back and pick comment.
-      system.ping_back("A pull request for your branch is being created")
+      system.ping_back("A pull request for your branch is being created") unless quiet
       system.ready
     end
     

@@ -57,6 +57,11 @@ EOS
 
   opts.separator("")
 
+  options[:quiet] = false
+  opts.on("-q", "--quiet", "No pingbacks. No chatter to systems (jira/zendesk).") do
+    options[:quiet] = true
+  end
+
   opts.on('-h', '--help', 'This help dialog') do
     puts opts
     exit
@@ -77,5 +82,5 @@ rescue OptionParser::InvalidOption, OptionParser::MissingArgument, OptionParser:
 end
 
 zit_zap = Zit::Zap.new
-zit_zap.init(options[:foreign_key], options[:system], options[:project]) if options[:init]
-zit_zap.finish if options[:finish]
+zit_zap.init(options[:foreign_key], options[:system], options[:project], options[:quiet]) if options[:init]
+zit_zap.finish(options[:quiet]) if options[:finish]

@@ -73,7 +73,9 @@ module Zit
         rep_steps = (pick_comment(comments) || "Place a brief description here.")
       end
       link = "#{pr_link}#{@options[:current_branch]}"
-      `open #{link}?pull_request[title]=#{@options[:system] == :zendesk ? "ZD" : "#{@options[:project]}-"}#{@options[:foreign_key]}&pull_request[body]=#{CGI.escape(rep_steps)}`
+      title_prefix = @options[:system] == :zendesk ? "ZD" : "#{@options[:project]}-"
+      cmd = "open #{link}?pull_request[title]=#{title_prefix}#{@options[:foreign_key]}&pull_request[body]=#{CGI.escape(rep_steps)}"
+      system(cmd)
     end
 
     def pick_comment(comments)
@@ -113,7 +115,7 @@ module Zit
         next unless audit.events.map(&:value).join(" ").include?(macro_tag)
         audit
       end
-      return aud.events.detect{|c| c.type == "Comment"}.body if aud.present?
+      return aud.events.detect{|c| c.type == "Comment"}.body unless aud.nil?
       return nil
     end
 
