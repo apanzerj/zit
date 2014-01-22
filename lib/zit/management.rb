@@ -64,7 +64,9 @@ module Zit
     def ready
       if @options[:system] == :zendesk
         ticket = @options[:client].tickets.find(:id => @options[:foreign_key])
-        rep_steps = get_repsteps(ticket)
+        audits = ticket.audits.fetch
+        comments = audits.map{|m| m["events"].select{|c| c if c["type"] == "Comment"} }
+        rep_steps = (get_repsteps(audits) || pick_comment(comments.flatten!))
       elsif @options[:system] == :jira
         issue = @options[:client].get_issue("#{@options[:project]}-#{@options[:foreign_key]}")
         comments = issue["fields"]["comment"]["comments"]
@@ -103,9 +105,8 @@ module Zit
       ticket.save
     end
 
-    def get_repsteps(ticket)
+    def get_repsteps(audits)
       macro_tag = @settings.get("repsteps_tag")
-      audits = ticket.audits.fetch
       aud = audits.detect do |audit|
         next unless audit.events.map(&:type).include?("Change")
         next unless audit.events.map(&:field_name).include?("tags")
@@ -113,7 +114,7 @@ module Zit
         audit
       end
       return aud.events.detect{|c| c.type == "Comment"}.body if aud.present?
-      return "No replication steps found\n"
+      return nil
     end
 
     # Jira methods
