@@ -73,7 +73,7 @@ module Zit
         rep_steps = (pick_comment(comments) || "Place a brief description here.")
       end
       link = "#{pr_link}#{@options[:current_branch]}"
-      puts "open #{link}?pull_request[title]=#{@options[:system] == :zendesk ? "ZD" : "#{@options[:project]}-"}#{@options[:foreign_key]}&pull_request[body]=#{CGI.escape(rep_steps)}"
+      `open #{link}?pull_request[title]=#{@options[:system] == :zendesk ? "ZD" : "#{@options[:project]}-"}#{@options[:foreign_key]}&pull_request[body]=#{CGI.escape(rep_steps)}`
     end
 
     def pick_comment(comments)
