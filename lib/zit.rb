@@ -55,7 +55,7 @@ module Zit
       system.ping_back(msg) unless quiet
     end
 
-    def finish
+    def finish(quiet)
       # Description: Finish workflow by calling ready. This method is the start of the "closing up" workflow.
       settings = Zit::Settings.new
 

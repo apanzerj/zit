@@ -74,7 +74,8 @@ module Zit
       end
       link = "#{pr_link}#{@options[:current_branch]}"
       title_prefix = @options[:system] == :zendesk ? "ZD" : "#{@options[:project]}-"
-      cmd = "open #{link}?pull_request[title]=#{title_prefix}#{@options[:foreign_key]}&pull_request[body]=#{CGI.escape(rep_steps)}"
+      cmd = "open '#{link}?pull_request[title]=#{title_prefix}#{@options[:foreign_key]}&pull_request[body]=#{CGI.escape(rep_steps)}'"
+      puts cmd
       system(cmd)
     end
 
