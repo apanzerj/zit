@@ -11,8 +11,8 @@ module Zit
       #   }
       
       #Validate ENV and Options
-      options_validation(options)
       Zit::Error.new("There was an error configuring the client.") unless set_client
+      options_validation(options)
     end
 
     def set_client
@@ -40,7 +40,7 @@ module Zit
         Zit::Error.new("Invalid system...") if options[:system] != :zendesk && options[:system] != :jira
         case options[:system]
         when :zendesk
-          Zit::Error.new("No ticket number provided!") if options[:foreign_key].nil?
+          pick_ticket_recent if options[:foreign_key].nil?
         when :jira
           Zit::Error.new("No jira project!") if options[:project].nil?
           Zit::Error.new("No issue id!") if options[:foreign_key].nil?
@@ -117,6 +117,14 @@ module Zit
       end
       return aud.events.detect{|c| c.type == "Comment"}.body unless aud.nil?
       return nil
+    end
+
+    def pick_ticket_recent
+      recent_list = @options[:client].tickets.recent.fetch
+      puts "No ticket specified. You can specify a ticket by using \"-t [ticket_id]\" as a parameter."
+      puts "Ticket ID\tSubject "
+      recent_list.each{|ticket| puts "#{ticket["id"]}\t#{ticket["subject"]}"}
+      exit
     end
 
     # Jira methods
