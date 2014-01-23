@@ -18,6 +18,7 @@ module Zit
     def set_client
       case @options[:system]
       when :zendesk
+        puts TOKEN
         env_set = (TOKEN.is_a?(String) && TOKEN.size > 0) && (USER.is_a?(String) && USER.size > 0)
         Zit::Error.new("Unable to locate the zendesk_token and zendesk_user environment variables. Please set them and try again.") unless env_set
         puts "Connecting to Zendesk..."

@@ -10,7 +10,7 @@ require "httparty"
 module Zit
   BASE_REPO = "https://github.com/zendesk/zendesk"
   
-  TOKEN = ENV['zendesk_token']
+  TOKEN = /^password: \"(.*)\"/.match(`security find-generic-password -s "zendesk.zit" -g 2>&1 >/dev/null`)[1]
   USER = ENV['zendesk_user']
   
   JIRA_USER = ENV['jira_user']
