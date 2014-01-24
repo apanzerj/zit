@@ -8,7 +8,6 @@ require "CGI"
 require "httparty"
 
 module Zit
-  BASE_REPO = "https://github.com/zendesk/zendesk"
   
   TOKEN = ENV['zendesk_token']
   USER = ENV['zendesk_user']
@@ -24,31 +23,39 @@ module Zit
   end
 
   class Zap
+
     def init(fk, connector, project=nil, quiet)
       # get settings from .zit
-      settings = Zit::Settings.new
+      @settings = Zit::Settings.new
 
-      #initialize issue/ticket system
-      system = Zit::Management.new({:system => connector, :foreign_key => fk, :project=>project}, settings)
+      # initialize issue/ticket system
+      system = Zit::Management.new({:system => connector, :foreign_key => fk, :project=>project}, @settings)
       
       #gather git data
       Zit::Error.new("Not a git repository") unless File.directory?(".git")
-      puts "Found .git"
       @g = Git.open(Dir.pwd)
+
+      # make sure we haven't changed repos
+      validate_repo
+
+      # branch off of master!
       checkout_master unless @g.current_branch.to_s == "master"
+
+      # derive the proper github username
       begin
         name = @g.config('github.user')
+        @settings.update_setting("gitname", name.to_s) if (@settings.get("gitname") == "doody" || @settings.get("gitname") != name)
       rescue Git::GitExecuteError
-        puts "Git name not set! Using doody..."
+        puts "Github user not set! Using defualt 'doody'..."
         name = "doody"
       end
       
-      #name the new branch
+      # name the new branch and checkout
       new_branch = system.branch_name(name)
       @g.branch(new_branch).checkout
       
       # set last system and last branch
-      settings.update_settings({:last_system => connector, :last_branch => new_branch})
+      @settings.update_settings({:last_system => connector, :last_branch => new_branch})
 
       # Provide a ping_back message
       msg = "A branch for this #{connector == :jira ? "issue" : "ticket" } has been created. It should be named #{new_branch}."
@@ -76,11 +83,37 @@ module Zit
       system.ping_back("A pull request for your branch is being created") unless quiet
       system.ready
     end
-    
+
+    def update
+      # read settings
+      settings = Zit::Settings.new
+
+      # get GitHub key
+      gh_key = ENV['gh_api_key']
+      Zit::Error.new("GitHub key is missing! Can't update.") if gh_key.nil?
+
+      # Get the owner / repo and get relevant PR url
+      (owner, repo) = settings.get("base_repo").match(/com\/(.*?)\/(.*?)$/)[1..2]
+      response = HTTParty.get("https://api.github.com/repos/#{owner}/#{repo}/pulls", :query=>{:state => "open"}, :basic_auth => {:username => gh_key, :password=> "x-oauth-basic"}, :headers => {"User-Agent" => "zit_gem_0.0.1"})
+      selected_pr = response.select do |pr|
+        next if pr["head"]["ref"] != settings.get("last_branch")
+        pr
+      end
+      url = selected_pr.first["html_url"]
+
+      # Get necessary options for system ping_back
+      @options = {:current_branch => settings.get("last_branch")}
+      settings.get("last_system") == :zendesk ? zendesk_ready : jira_ready
+
+      # ping_back
+      system = Zit::Management.new(@options, settings)
+      system.ping_back("PR: #{url}")
+    end
         
     private
     
     def checkout_master
+      # This is REALLY slow for large repos... Take out? Took me 24 seconds to get to master
       puts "Attempting to switch to master..."
       master = @g.branches[:master]
       Zit::Error.new("Couldn't find branch master! #{master.inspect}") unless master
@@ -101,6 +134,16 @@ module Zit
     def zendesk_ready
       @options[:system] = :zendesk
       @options[:foreign_key] = @options[:current_branch].match(/.*?\/zd(\d{1,8})/)[1]
+    end
+
+    def validate_repo
+      # we need to make sure we haven't moved to a different local repo then last time.
+
+      (owner, repo) = @g.remote.url.to_s.match(/com:(.*)\/(.*)\.git$/)[1..2]       # git@github.com:foo/bar.git => 1=foo 2=bar
+      base_repo = "https://github.com/#{owner}/#{repo}"
+      unless base_repo == @settings.get("base_repo")
+        @settings.update_setting(:base_repo, "https://github.com/#{owner}/#{repo}")
+      end
     end
   end
 end

@@ -52,8 +52,8 @@ module Zit
     end
     
     def branch_name(username)
-      @options[:branch_name] ||= "#{username}/zd#{@options[:foreign_key]}" if @options[:system] == :zendesk
-      @options[:branch_name] ||= "#{username}/#{@options[:project]}_#{@options[:foreign_key]}" if @options[:system] == :jira
+      @options[:branch_name] ||= "#{username}/zd#{@options[:foreign_key]}"                        if @options[:system] == :zendesk
+      @options[:branch_name] ||= "#{username}/#{@options[:project]}_#{@options[:foreign_key]}"    if @options[:system] == :jira
       @options[:branch_name]
     end
 
@@ -66,16 +66,16 @@ module Zit
         ticket = @options[:client].tickets.find(:id => @options[:foreign_key])
         audits = ticket.audits.fetch
         comments = audits.map{|m| m["events"].select{|c| c if c["type"] == "Comment"} }
-        rep_steps = (get_repsteps(audits) || pick_comment(comments.flatten!))
+        rep_steps = (get_repsteps(audits) || pick_comment(comments.flatten!)) if @settings.get("include_repsteps_by_default")
       elsif @options[:system] == :jira
         issue = @options[:client].get_issue("#{@options[:project]}-#{@options[:foreign_key]}")
         comments = issue["fields"]["comment"]["comments"]
-        rep_steps = (pick_comment(comments) || "Place a brief description here.")
+        rep_steps = (pick_comment(comments) || "Place a brief description here.") if @settings.get("include_repsteps_by_default")
       end
+      rep_steps ||= "Description goes here..."
       link = "#{pr_link}#{@options[:current_branch]}"
       title_prefix = @options[:system] == :zendesk ? "ZD" : "#{@options[:project]}-"
       cmd = "open '#{link}?pull_request[title]=#{title_prefix}#{@options[:foreign_key]}&pull_request[body]=#{CGI.escape(rep_steps)}'"
-      puts cmd
       system(cmd)
     end
 
@@ -95,7 +95,7 @@ module Zit
     end
 
     def pr_link
-      link = "#{BASE_REPO}/compare/master..."
+      link = "#{@settings.get("base_repo")}/compare/master..."
     end
 
     # Zendesk methods
@@ -113,7 +113,7 @@ module Zit
       aud = audits.detect do |audit|
         next unless audit.events.map(&:type).include?("Change")
         next unless audit.events.map(&:field_name).include?("tags")
-        next unless audit.events.map(&:value).join(" ").include?(macro_tag)
+        next unless audit.events.map(&:value).join(" ").include?(" #{macro_tag} ")
         audit
       end
       return aud.events.detect{|c| c.type == "Comment"}.body unless aud.nil?

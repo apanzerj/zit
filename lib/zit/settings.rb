@@ -1,7 +1,8 @@
 module Zit
   class Settings
     DEFAULTS = {
-        :default_system               => :zendesk,
+        :gitname                      => "doody",
+        :base_repo                    => nil,
         :last_branch                  => nil,
         :last_system                  => nil,
         :repsteps_tag                 => "macro_1234",

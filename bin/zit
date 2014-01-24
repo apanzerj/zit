@@ -18,17 +18,16 @@ The finishing workflow, for when you are ready to create a pull request uses the
 
 zit finish -c CONNECTOR
 
+You can, additionally, run zit update -c CONNECTOR to post the now saved PR to the ticket.
+
 The params for init are as follows:
 
 EOS
 
   # optparse doesn't like subcommands. So neither of the following are output when you call help.
-
-  options[:init] = false
-  options[:init] = true if subcommand == "init"
-  
-  options[:finish] = false
-  options[:finish] = true if subcommand == "finish"
+  ["init", "finish", "update"].each do |flow|
+    options[flow.to_sym] = (subcommand == flow ? true : false)
+  end
 
   # These options are output.
 
@@ -70,10 +69,12 @@ end
 
 begin
   optparse.parse!
-  if (options[:system].nil? || (options[:system] != :jira && options[:system] != :zendesk))
-    puts "No connector, or incorrect connector specified."
-    puts "#{options.inspect}, |#{options[:system]}|"
-    exit
+  if subcommand == "init"
+    if (options[:system].nil? || (options[:system] != :jira && options[:system] != :zendesk))
+      puts "No connector, or incorrect connector specified."
+      puts "#{options.inspect}, |#{options[:system]}|"
+      exit
+    end
   end
 rescue OptionParser::InvalidOption, OptionParser::MissingArgument, OptionParser::InvalidArgument
   puts $!.to_s
@@ -82,5 +83,6 @@ rescue OptionParser::InvalidOption, OptionParser::MissingArgument, OptionParser:
 end
 
 zit_zap = Zit::Zap.new
-zit_zap.init(options[:foreign_key], options[:system], options[:project], options[:quiet]) if options[:init]
-zit_zap.finish(options[:quiet]) if options[:finish]
+zit_zap.init(options[:foreign_key], options[:system], options[:project], options[:quiet])   if options[:init]
+zit_zap.finish(options[:quiet])                                                             if options[:finish]
+zit_zap.update                                                                              if options[:update]

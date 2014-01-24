@@ -9,25 +9,43 @@ Helps manage Pull Requests and branches in git while sending automated (private)
 
 # Configuration
 
-1. Inside lib/zit.rb there are some constants defined. BASE\_REPO is the url for the repository you are working with, for example: https://github.com/apanzerj/zit.
+Almost all configuration settings are stored in ~/.zit in YAML format. The default config, shown below, is in ruby hash for easier reading.
 
-2. In management.rb there is a method called "get\_repsteps". In there, you'll find this line:
+The default config is:
 
-    ````ruby
-    next unless audit.events.map(&:value).join(" ").include?("macro_1234")
-    ````
+````ruby
+{
+:gitname                      => "doody",         # your git username
+:base_repo                    => nil,             # base github repo
+:last_branch                  => nil,             # the last branch you were on when you ran init
+:last_system                  => nil,             # the last system you specified when you ran init
+:repsteps_tag                 => "macro_1234",    # replication steps tag (see below)
+:include_repsteps_by_default  => true,            # include replication steps by default
+:zendesk_url                  => nil,             # The url of your Zendesk instance
+:jira_url                     => nil,             # The url of your jira instance
+:settings_version             => 1.0              # ignore this right now.
+}
+````
 
-    Where it says "macro\_1234" you should change this to the specific tag you will use when you want to denote replication steps to the development group. This will help Zit find replication steps on a ticket. 
+The only settings that MUST be set in this file are: zendesk\_url and jira\_url
 
-3. Finally, you'll need to have 4 environment variables set: zendesk\_user, zendesk\_token, jira\_user, and jira\_pass
+In management.rb there is a method called "get\_repsteps". In there, you'll find this line:
+
+````ruby
+next unless audit.events.map(&:value).join(" ").include?(macro_tag)
+````
+
+The "macro_tag" refers to the setting in ~/.zit called repsteps\_tag (which refers to a tag that is added with a comment on a series of replication steps). This is only workable for Zendesk tickets as Jira issues do not have tags. If the repsteps\_tag is not found on any comment, you'll be given a list of all comments to pick amongst. In addition, the setting include\_repsteps\_by\_default can be swtiched to false in order to skip this process all together.
+
+Finally, you'll need to have 5 environment variables set: zendesk\_user, zendesk\_token, jira\_user, jira\_pass, and optionally your gh_api_key which can be generated here: https://github.com/settings/applications (under "Personal Access Tokens")
+
+The GH api token is only needed if you want to use the zit update function.
 
 # Todo
 
-1. Find a better way to manage configuration
+1. Dry things up.
 
-2. Zendesk comment selection mirroring the way Jira comment are selected.
-
-3. Dry things up.
+2. Fix up docs (the stuff below here is stale)
 
 ## Usage
 
@@ -35,13 +53,13 @@ Helps manage Pull Requests and branches in git while sending automated (private)
 
 **Description:** When used with Zendesk the syntax is as follows:
 
-    $ zit init -c zendesk -t [TICKET\_ID]
+    $ zit init -c zendesk -t [TICKET_ID]
 
 Use this to start your workflow. The init command will initialize the repository. The -c/--connector flag will tell Zit which system you are talking to, zendesk or jira. The -t flag passes in the Zendesk ticket id number.
 
 **Results:** Zit will create a new branch with a name composed of the format:
 
-name/zd[ticket\_id
+name/zd[ticket\_id]
 
 For example:
 
@@ -88,3 +106,13 @@ When finished with your branch you can still type:
     $ zit ready -c jira
 
 But Zit will give you a list of comments to choose from so you can decide which one you want to be included as your pull request description. 
+
+Lastly, once you have submitted your pull request you can type:
+
+zit update
+
+To have Zit update the ticket/issue with the comment:
+
+PR: {PR URL}
+
+For the relevant pull request.
