@@ -1,7 +1,11 @@
 # Zit
 
 
-Helps manage Pull Requests and branches in git while sending automated (private) updates to the Zendesk agent(s) who are working with the customer.
+Goals:
+
+* Provide a consistent looking pull request
+* Make branch naming consistent
+* Easily provide feedback to advocates about ticket status
 
 # Install
 
