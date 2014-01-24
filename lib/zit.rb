@@ -80,7 +80,10 @@ module Zit
       system = Zit::Management.new(@options, settings)
 
       # Ping_back and pick comment.
-      system.ping_back("A pull request for your branch is being created") unless quiet
+      # If the ENV['gh_api_key'] is nill, we want to ping back since we won't be updating the ticket
+      # with a PR link.
+
+      system.ping_back("A pull request for your branch is being created") unless (quiet || ENV['gh_api_key'].nil?)
       system.ready
     end
 
@@ -139,7 +142,7 @@ module Zit
     def validate_repo
       # we need to make sure we haven't moved to a different local repo then last time.
 
-      (owner, repo) = @g.remote.url.to_s.match(/com:(.*)\/(.*)\.git$/)[1..2]       # git@github.com:foo/bar.git => 1=foo 2=bar
+      (owner, repo) = @g.remote.url.to_s.match(/com:(.*)\/(.*)\.git$/)[1..2]
       base_repo = "https://github.com/#{owner}/#{repo}"
       unless base_repo == @settings.get("base_repo")
         @settings.update_setting(:base_repo, "https://github.com/#{owner}/#{repo}")
