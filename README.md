@@ -109,7 +109,7 @@ But Zit will give you a list of comments to choose from so you can decide which 
 
 Lastly, once you have submitted your pull request you can type:
 
-zit update
+    $ zit update
 
 To have Zit update the ticket/issue with the comment:
 
