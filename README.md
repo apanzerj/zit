@@ -82,11 +82,7 @@ Once you have completed your work on the branch, you can use:
 
     $ zit ready -c zendesk
 
-Zit will detect the currently checked out branch and then pingback the ticket with a private comment:
-
-"A pull request for your branch is being created."
-
-Zit will then call:
+Zit will detect the currently checked out branch. Zit will then call:
 
     $ open https://github.com/....
 
