@@ -43,7 +43,7 @@ module Zit
 
       # derive the proper github username
       begin
-        name = @g.config('github.user')
+        name = @g.config()["github.user"]
         @settings.update_setting("gitname", name.to_s) if (@settings.get("gitname") == "doody" || @settings.get("gitname") != name)
       rescue Git::GitExecuteError
         puts "Github user not set! Using defualt 'doody'..."
