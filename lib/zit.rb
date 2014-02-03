@@ -52,7 +52,7 @@ module Zit
       
       # name the new branch and checkout
       new_branch = system.branch_name(name)
-      @g.branch(new_branch).checkout
+      @g.branch(new_branch.to_s).checkout
       
       # set last system and last branch
       @settings.update_settings({:last_system => connector, :last_branch => new_branch})
@@ -120,7 +120,7 @@ module Zit
       puts "Attempting to switch to master..."
       master = @g.branches[:master]
       Zit::Error.new("Couldn't find branch master! #{master.inspect}") unless master
-      master.checkout
+      @g.checkout master.to_s
     end
     
 
