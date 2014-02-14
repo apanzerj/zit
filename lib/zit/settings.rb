@@ -1,3 +1,5 @@
+require "Psych"
+
 module Zit
   class Settings
     DEFAULTS = {

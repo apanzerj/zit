@@ -6,7 +6,7 @@ require "git"
 require "zendesk_api"
 require "CGI"
 require "httparty"
-
+require "octokit"
 module Zit
   
   TOKEN = ENV['zendesk_token']
@@ -149,4 +149,14 @@ module Zit
       end
     end
   end
+
+  class Alfred
+    def initialize(options)
+      list_repos if options[:repos]
+    end
+  end
+
+  class AlfredPrinter
+    def initialize()
+    end
 end
