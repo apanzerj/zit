@@ -1,4 +1,4 @@
-require "Psych"
+require "psych"
 
 module Zit
   class Settings
